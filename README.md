@@ -4,10 +4,6 @@ A collection of essential prefabs and assets for ChilloutVR.
 
 ## Installation
 
-**Option 1 — Full package (ZIP)**
-Download this repository as a ZIP, extract it, and drop the contents into `Assets/LensError-CVR-Essentials/` in your Unity project.
-
-**Option 2 — Pick what you need (UnityPackage)**
 Head to the [Releases](#releases) table, grab whichever package you want, then double-click the `.unitypackage` or drag it straight into your project.
 
 ## Requirements
