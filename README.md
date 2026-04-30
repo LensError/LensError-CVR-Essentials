@@ -23,3 +23,7 @@ Before importing this package into your Unity project, make sure you have the fo
 |---------|-------|----------|
 | Settings UI | Example buttons, toggles, sliders. Local and networked | Coming Soon |
 | World | Many of the prefabs showcased in a basic, decently optimized world demonstrating light probes, reflection probes, and more | Coming Soon |
+
+## Credits
+
+- Textures sourced from [ambientCG](https://ambientcg.com) (Public Domain / CC0)
