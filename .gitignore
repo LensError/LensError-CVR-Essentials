@@ -8,3 +8,7 @@ CLAUDE.md
 *.blend1
 *.blend1.meta
 LICENSE.meta
+CLAUDE.md.meta
+README.md.meta
+ExampleProjectFolder/
+ExampleProjectFolder.meta
