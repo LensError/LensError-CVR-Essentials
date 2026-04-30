@@ -986,7 +986,7 @@ MonoBehaviour:
       customEvent:
         m_PersistentCalls:
           m_Calls: []
-    actionType: 3
+    actionType: 18
     execType: 4
     layerMask:
       serializedVersion: 2
@@ -1005,7 +1005,7 @@ MonoBehaviour:
     interactionFilter: 0
     interactionInput: 48
     interactionInputModifier: 0
-    guid: 
+    guid: 2f7b0975-4810-4ac3-8380-474495cedbaf
   onEnterSeat:
     m_PersistentCalls:
       m_Calls: []
@@ -1173,7 +1173,7 @@ MonoBehaviour:
   m_Interactable: 1
   m_TargetGraphic: {fileID: 7064091938750901817}
   toggleTransition: 0
-  graphic: {fileID: 2087834202098445262}
+  graphic: {fileID: 0}
   m_Group: {fileID: 0}
   onValueChanged:
     m_PersistentCalls:
@@ -1223,6 +1223,7 @@ MonoBehaviour:
     - type: 1
       targets:
       - {fileID: 6441431216352552235}
+      - {fileID: 5586721510094869785}
       floatVal: 2
       stringVal: 
       stringVal2: 
@@ -1241,7 +1242,7 @@ MonoBehaviour:
       customEvent:
         m_PersistentCalls:
           m_Calls: []
-    actionType: 3
+    actionType: 18
     execType: 4
     layerMask:
       serializedVersion: 2
@@ -1260,7 +1261,7 @@ MonoBehaviour:
     interactionFilter: 0
     interactionInput: 48
     interactionInputModifier: 0
-    guid: 
+    guid: 420d40ae-a851-403a-bcce-d7de4675b5cc
   onEnterSeat:
     m_PersistentCalls:
       m_Calls: []
