@@ -1,0 +1,9 @@
+*.tmp
+*.temp
+~*
+Thumbs.db
+.DS_Store
+.claude/
+CLAUDE.md
+*.blend1
+*.blend1.meta
