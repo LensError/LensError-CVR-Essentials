@@ -27,3 +27,4 @@ Before importing this package into your Unity project, make sure you have the fo
 ## Credits
 
 - Textures sourced from [ambientCG](https://ambientcg.com) (Public Domain / CC0)
+- UI click sound by [cabled_mess](https://freesound.org/people/cabled_mess/sounds/370962/) via Freesound (CC0)
