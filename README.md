@@ -21,7 +21,7 @@ Before importing this package into your Unity project, make sure you have the fo
 
 | Release | Notes | Download |
 |---------|-------|----------|
-| Settings UI | Example buttons, toggles, sliders. Local and networked | Coming Soon |
+| Settings UI | Example buttons, toggles, ~~sliders~~ (coming soon). Local and networked | [Download](https://github.com/LensError/LensError-CVR-Essentials/releases/latest/download/UISettings.unitypackage) |
 | World | Many of the prefabs showcased in a basic, decently optimized world demonstrating light probes, reflection probes, and more | Coming Soon |
 
 ## Credits
