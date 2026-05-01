@@ -228,7 +228,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &1537555317993927864
 Transform:
@@ -405,6 +405,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2033711901089151672}
   - component: {fileID: 6026278757675868958}
+  - component: {fileID: 8190942471040889041}
   m_Layer: 0
   m_Name: Toggle (Local)
   m_TagString: Untagged
@@ -506,6 +507,29 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   m_IsOn: 1
+--- !u!114 &8190942471040889041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2500580969813332896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edc847c3525e44118a56bf95486e228c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: 'For local interactions, you can use the button or toggle UI components
+    directly for things that only happen on your own screen.
+
+
+    The CVR Interactable
+    setup(see networked button setup) also works for local events, and it is especially
+    useful because it allows you to drag multiple objects into its array list at
+    once, which is much easier than adding them one by one.'
+  url: 
+  locked: 1
+  type: 1
 --- !u!1 &2971731536884886387
 GameObject:
   m_ObjectHideFlags: 0
@@ -591,6 +615,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5293398053976690793}
   - component: {fileID: 4383142178477150408}
+  - component: {fileID: 1904330965299707922}
   m_Layer: 0
   m_Name: Button (Local)
   m_TagString: Untagged
@@ -687,6 +712,29 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &1904330965299707922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3098272503818269238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edc847c3525e44118a56bf95486e228c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: 'For local interactions, you can use the button or toggle UI components
+    directly for things that only happen on your own screen.
+
+
+    The CVR Interactable
+    setup(see networked button setup) also works for local events, and it is especially
+    useful because it allows you to drag multiple objects into its array list at
+    once, which is much easier than adding them one by one.'
+  url: 
+  locked: 1
+  type: 1
 --- !u!1 &3233654325747817355
 GameObject:
   m_ObjectHideFlags: 0
@@ -851,6 +899,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2689353292130592414}
   - component: {fileID: 4341518446876887251}
+  - component: {fileID: 4705815735015051642}
   - component: {fileID: 214301297348741184}
   m_Layer: 0
   m_Name: Button (Networked)
@@ -948,6 +997,50 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &4705815735015051642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4292038253712548750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edc847c3525e44118a56bf95486e228c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: 'For networked buttons, we feed the click event through the toggle
+    or button component to the CVR Interactable on the same object using a CustomTrigger.
+    The interactable component allows you to drag multiple objects into its array
+    list, easier than dragging items there one by one.
+
+    
+
+    When dragging
+    these objects from the hierarchy, remember to click the lock icon in the top
+    right of the Inspector. This keeps your button settings visible so you can select
+    and drop a whole group of items into the list without the window switching.
+
+    
+
+    Buffered
+    vs. Non-Buffered
+
+    Buffered triggers sync the state for new joiners, ensuring
+    they see the same world state as you. Non-buffered triggers only fire for those
+    currently in the room.
+
+    
+
+    When to use which
+
+    Use Buffered for
+    things like light switches or doors to prevent desync. Use Non-Buffered for one-time
+    events that don''t change the world state, like a sound effect or a quick particle
+    burst.'
+  url: 
+  locked: 1
+  type: 1
 --- !u!114 &214301297348741184
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1101,6 +1194,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8060694219680266408}
   - component: {fileID: 3947685237110843552}
+  - component: {fileID: 2175388629552423051}
   - component: {fileID: 7801304167829569900}
   m_Layer: 0
   m_Name: Toggle (Networked)
@@ -1203,6 +1297,50 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   m_IsOn: 1
+--- !u!114 &2175388629552423051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5756110304399531681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edc847c3525e44118a56bf95486e228c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: 'For networked buttons, we feed the click event through the toggle
+    or button component to the CVR Interactable on the same object using a CustomTrigger.
+    The interactable component allows you to drag multiple objects into its array
+    list, easier than dragging items there one by one.
+
+    
+
+    When dragging
+    these objects from the hierarchy, remember to click the lock icon in the top
+    right of the Inspector. This keeps your button settings visible so you can select
+    and drop a whole group of items into the list without the window switching.
+
+    
+
+    Buffered
+    vs. Non-Buffered
+
+    Buffered triggers sync the state for new joiners, ensuring
+    they see the same world state as you. Non-buffered triggers only fire for those
+    currently in the room.
+
+    
+
+    When to use which
+
+    Use Buffered for
+    things like light switches or doors to prevent desync. Use Non-Buffered for one-time
+    events that don''t change the world state, like a sound effect or a quick particle
+    burst.'
+  url: 
+  locked: 1
+  type: 1
 --- !u!114 &7801304167829569900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1320,7 +1458,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &9140417249762771726
 Transform:
@@ -1853,7 +1991,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &6203110822286051583
 Transform:
@@ -1958,7 +2096,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2871773526267500290
 Transform:
@@ -2055,6 +2193,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6495334433957719349}
+  - component: {fileID: 4712451927523784525}
   m_Layer: 0
   m_Name: UI Settings
   m_TagString: Untagged
@@ -2078,6 +2217,25 @@ Transform:
   - {fileID: 4652342342895324204}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -89.98, y: 0, z: 0}
+--- !u!114 &4712451927523784525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8408000819804277099}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edc847c3525e44118a56bf95486e228c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: There is a Canvas object located below this. It requires the CVR Canvas
+    Wrapper component to properly adjust interaction distances. Without this component,
+    you might find that players cannot interact with the UI from the intended distance
+    or that the interaction range feels off in-game.
+  url: 
+  locked: 1
+  type: 1
 --- !u!1001 &5123629401136016327
 PrefabInstance:
   m_ObjectHideFlags: 0
