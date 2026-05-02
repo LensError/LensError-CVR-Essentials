@@ -14,11 +14,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.053
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.073
+      value: -0.96
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -56,6 +56,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: dc77bbd25281cdd45a4a38339caed44b, type: 2}
+    - target: {fileID: -7511558181221131132, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
+      propertyPath: m_Materials.Array.data[2]
+      value: 
+      objectReference: {fileID: 2100000, guid: 6dabfff8f63e0a44e8bb9c1f822a7c9b, type: 2}
     - target: {fileID: 919132149155446097, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
       propertyPath: m_Name
       value: PictureFrameLandscape
@@ -67,5 +71,39 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
+      insertIndex: 1
+      addedObject: {fileID: 1600932979458410733}
   m_SourcePrefab: {fileID: 100100000, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
+--- !u!1 &6490634557839482566 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5d1d4c3b4e59e524fa2b3945756e699c, type: 3}
+  m_PrefabInstance: {fileID: 6256120471753368471}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1600932979458410733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6490634557839482566}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edc847c3525e44118a56bf95486e228c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: 'This is a prefab, which means you can pull it into your scene and
+    override specific settings like materials or textures to fit your needs.
+
+
+
+    The
+    best part is that these changes only stay on the object in the scene. You can
+    still drag the original version from your project window to get a fresh, default
+    copy whenever you want. This is especially helpful for things like these picture
+    frames, as it lets you use the same base model throughout your world while giving
+    each one a unique image.'
+  url: 
+  locked: 1
+  type: 1
