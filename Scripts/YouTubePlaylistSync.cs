@@ -6,21 +6,19 @@ using UnityEngine;
 
 namespace LensError
 {
-    /// <summary>
-    /// Editor-only helper that tracks one or more YouTube playlists and syncs them
-    /// into a CVRVideoPlayer on demand. Implements ICCKEditorOnly so CCK destroys it
-    /// before world upload — no runtime overhead.
-    /// </summary>
     [AddComponentMenu("LensError/YouTube Playlist Sync")]
     [DisallowMultipleComponent]
     public class YouTubePlaylistSync : MonoBehaviour, ICCKEditorOnly
     {
+        public enum PlaylistSortOrder { PlaylistOrder, NewestFirst, OldestFirst }
+
         [Serializable]
         public class SyncEntry
         {
             public string playlistUrl = "";
             public bool shuffle;
             public bool includeAgeRestricted;
+            public PlaylistSortOrder sortOrder;
             // Written by the custom editor after each successful sync
             [HideInInspector] public string lastSyncedUtc = "";
             [HideInInspector] public int    lastSyncedCount;
