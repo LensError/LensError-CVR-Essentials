@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 using ABI.CCK.Components;
@@ -24,6 +25,7 @@ namespace LensError.Editor
         private string _playlistInput = "";
         private CVRVideoPlayer _targetPlayer;
         private bool _shuffleOnImport;
+        private SortOrder _sortOrder;
         private bool _appendToExisting;
 
         // Scene player picker
@@ -136,7 +138,7 @@ namespace LensError.Editor
         {
             EditorGUILayout.LabelField("Import Settings", EditorStyles.boldLabel);
 
-            _playlistInput = EditorGUILayout.TextField("Playlist URL or ID", _playlistInput);
+            _playlistInput = EditorGUILayout.TextField("Playlist / Channel URL or ID", _playlistInput);
 
             // Scene player dropdown
             EditorGUILayout.BeginHorizontal();
@@ -164,6 +166,11 @@ namespace LensError.Editor
             }
 
             _shuffleOnImport = EditorGUILayout.Toggle("Shuffle on Import", _shuffleOnImport);
+
+            EditorGUI.BeginDisabledGroup(_shuffleOnImport);
+            _sortOrder = (SortOrder)EditorGUILayout.EnumPopup("Sort Order", _sortOrder);
+            EditorGUI.EndDisabledGroup();
+
             _appendToExisting = EditorGUILayout.Toggle("Append to Existing", _appendToExisting);
 
             EditorGUILayout.Space(2);
@@ -289,10 +296,17 @@ namespace LensError.Editor
         private async Task FetchAsync()
         {
             string id = ExtractPlaylistId(_playlistInput);
+
+            bool isChannel = false;
+            string chParam = null, chValue = null;
             if (string.IsNullOrEmpty(id))
             {
-                SetStatus("Could not parse a playlist ID from the input.", true);
-                return;
+                if (!TryExtractChannelQuery(_playlistInput, out chParam, out chValue))
+                {
+                    SetStatus("Could not parse a playlist ID or channel URL from the input.", true);
+                    return;
+                }
+                isChannel = true;
             }
 
             _state = FetchState.Fetching;
@@ -309,6 +323,13 @@ namespace LensError.Editor
 
             try
             {
+                if (isChannel)
+                {
+                    _status = "Resolving channel...";
+                    Repaint();
+                    id = await GetChannelUploadsPlaylistIdAsync(chParam, chValue);
+                }
+
                 _meta = await GetPlaylistMetaAsync(id);
                 var raw = await GetAllItemsAsync(id);
                 var details = await GetVideoDetailsAsync(raw.ConvertAll(r => r.videoId));
@@ -320,13 +341,14 @@ namespace LensError.Editor
                     var avail = Classify(r.title, d);
                     _videos.Add(new VideoEntry
                     {
-                        videoId = r.videoId,
-                        title = string.IsNullOrEmpty(r.title) ? r.videoId : r.title,
+                        videoId      = r.videoId,
+                        title        = string.IsNullOrEmpty(r.title) ? r.videoId : r.title,
                         thumbnailUrl = r.thumbnailUrl,
+                        publishedAt  = r.publishedAt,
                         availability = avail,
-                        selectable = avail == VideoAvailability.Available
-                                  || avail == VideoAvailability.AgeRestricted,
-                        include = avail == VideoAvailability.Available
+                        selectable   = avail == VideoAvailability.Available
+                                    || avail == VideoAvailability.AgeRestricted,
+                        include      = avail == VideoAvailability.Available
                     });
                 }
 
@@ -354,13 +376,19 @@ namespace LensError.Editor
             var list = _videos.FindAll(v => v.include);
             if (list.Count == 0) return;
 
+            // Apply sort order; shuffle overrides
+            if (_shuffleOnImport)
+                Shuffle(list);
+            else if (_sortOrder == SortOrder.NewestFirst)
+                list.Sort((a, b) => DateTime.Compare(b.publishedAt, a.publishedAt));
+            else if (_sortOrder == SortOrder.OldestFirst)
+                list.Sort((a, b) => DateTime.Compare(a.publishedAt, b.publishedAt));
+
             Undo.RecordObject(_targetPlayer, "YouTube Playlist Import");
 
             string baseTitle = _meta != null ? _meta.title : "YouTube Playlist";
             string thumbUrl  = _meta != null ? _meta.thumbnailUrl : "";
 
-            // Find all existing playlists that belong to this YouTube playlist
-            // (exact title match OR "Title (N)" numbered chunks)
             var matching = _targetPlayer.entities.FindAll(p => IsMatchingTitle(p.playlistTitle, baseTitle));
 
             if (matching.Count > 0)
@@ -381,7 +409,6 @@ namespace LensError.Editor
                 {
                     int itemIdx = 0;
 
-                    // Fill existing playlists that have capacity
                     foreach (var p in matching)
                     {
                         while (p.playlistVideos.Count < ChunkSize && itemIdx < newItems.Count)
@@ -392,13 +419,12 @@ namespace LensError.Editor
                         if (itemIdx >= newItems.Count) break;
                     }
 
-                    // Create new numbered overflow playlists for any remaining videos
                     int nextNum = MaxPlaylistNum(matching, baseTitle) + 1;
                     while (itemIdx < newItems.Count)
                     {
                         var overflow = new CVRVideoPlayerPlaylist
                         {
-                            playlistTitle = string.Format("{0} ({1})", baseTitle, nextNum++),
+                            playlistTitle        = string.Format("{0} ({1})", baseTitle, nextNum++),
                             playlistThumbnailUrl = thumbUrl
                         };
                         while (overflow.playlistVideos.Count < ChunkSize && itemIdx < newItems.Count)
@@ -418,7 +444,7 @@ namespace LensError.Editor
 
                 string mergeMsg = newItems.Count > 0
                     ? string.Format("Added {0} new video{1} to \"{2}\".", added, added == 1 ? "" : "s", baseTitle)
-                    : string.Format("No new videos — \"{0}\" is already up to date.", baseTitle);
+                    : string.Format("No new videos -- \"{0}\" is already up to date.", baseTitle);
                 if (_shuffleOnImport) mergeMsg += " Reshuffled.";
                 SetStatus(mergeMsg, false);
             }
@@ -427,8 +453,6 @@ namespace LensError.Editor
                 // NEW — split into ChunkSize chunks if needed
                 if (!_appendToExisting)
                     _targetPlayer.entities.Clear();
-
-                if (_shuffleOnImport) Shuffle(list);
 
                 bool multi = list.Count > ChunkSize;
                 int chunkNum = 0;
@@ -442,7 +466,7 @@ namespace LensError.Editor
 
                     var playlist = new CVRVideoPlayerPlaylist
                     {
-                        playlistTitle = title,
+                        playlistTitle        = title,
                         playlistThumbnailUrl = thumbUrl
                     };
                     foreach (var v in chunk)
@@ -462,14 +486,13 @@ namespace LensError.Editor
         private static CVRVideoPlayerPlaylistEntity MakeEntity(VideoEntry v) =>
             new CVRVideoPlayerPlaylistEntity
             {
-                videoTitle = v.title,
-                videoUrl = "https://www.youtube.com/watch?v=" + v.videoId,
-                thumbnailUrl = v.thumbnailUrl,
-                introEndInSeconds = 0,
+                videoTitle            = v.title,
+                videoUrl              = "https://www.youtube.com/watch?v=" + v.videoId,
+                thumbnailUrl          = v.thumbnailUrl,
+                introEndInSeconds     = 0,
                 creditsStartInSeconds = 0
             };
 
-        // Matches "Title" or "Title (N)" where N is a positive integer
         private static bool IsMatchingTitle(string playlistTitle, string baseTitle)
         {
             if (playlistTitle == baseTitle) return true;
@@ -480,7 +503,6 @@ namespace LensError.Editor
             return int.TryParse(inner, out n) && n > 0;
         }
 
-        // Returns the highest chunk number used across a set of matching playlists
         private static int MaxPlaylistNum(List<CVRVideoPlayerPlaylist> playlists, string baseTitle)
         {
             int max = 0;
@@ -497,6 +519,20 @@ namespace LensError.Editor
         }
 
         // ── API calls ─────────────────────────────────────────────────────────────
+
+        private async Task<string> GetChannelUploadsPlaylistIdAsync(string param, string value)
+        {
+            string url = YtApi + "channels?part=contentDetails&" + param + "="
+                + Uri.EscapeDataString(value) + "&key=" + _apiKey;
+            string json = await GetAsync(url);
+            var r = JsonUtility.FromJson<YtChannelListResp>(json);
+            if (r == null || r.items == null || r.items.Length == 0)
+                throw new Exception("Channel not found.");
+            string uploads = r.items[0].contentDetails.relatedPlaylists.uploads;
+            if (string.IsNullOrEmpty(uploads))
+                throw new Exception("Could not find uploads playlist for this channel.");
+            return uploads;
+        }
 
         private async Task<PlaylistMeta> GetPlaylistMetaAsync(string playlistId)
         {
@@ -529,9 +565,10 @@ namespace LensError.Editor
                     foreach (var item in r.items)
                         all.Add(new RawItem
                         {
-                            videoId = item.contentDetails.videoId,
-                            title = item.snippet.title,
-                            thumbnailUrl = BestThumb(item.snippet.thumbnails)
+                            videoId      = item.contentDetails.videoId,
+                            title        = item.snippet.title,
+                            thumbnailUrl = BestThumb(item.snippet.thumbnails),
+                            publishedAt  = ParseDate(item.contentDetails.videoPublishedAt)
                         });
 
                 pageToken = r != null ? r.nextPageToken : null;
@@ -643,22 +680,21 @@ namespace LensError.Editor
             return "";
         }
 
-        // Accepts:
-        //   PLrSXagddIY78stXnx87TJloCyFyTOBcpv                                  (plain ID)
-        //   https://www.youtube.com/playlist?list=PLxxx                          (playlist page)
-        //   https://www.youtube.com/watch?v=xxx&list=PLxxx                       (video inside playlist)
-        //   https://www.youtube.com/watch?v=xxx&list=PLxxx&index=1&pp=...&si=... (with extra params)
+        // Accepts playlist URLs/IDs. Returns null for channel URLs (caller tries TryExtractChannelQuery).
         private static string ExtractPlaylistId(string s)
         {
             if (s == null) return null;
             s = s.Trim();
             if (string.IsNullOrEmpty(s)) return null;
 
-            // Plain ID — no URL scheme
-            if (!s.Contains("://")) return s;
+            if (!s.Contains("://"))
+            {
+                // Bare @handle or UC... channel ID -- not a playlist
+                if (s.StartsWith("@")) return null;
+                if (s.StartsWith("UC") && !s.Contains(" ") && s.Length > 10) return null;
+                return s;
+            }
 
-            // All YouTube playlist URL formats share the same "list" query parameter,
-            // so one pass over the query string covers every variant.
             try
             {
                 string query = new Uri(s).Query.TrimStart('?');
@@ -671,6 +707,55 @@ namespace LensError.Editor
             }
             catch { }
             return null;
+        }
+
+        // Returns true when the input looks like a channel (not a playlist).
+        private static bool TryExtractChannelQuery(string s, out string param, out string value)
+        {
+            param = value = null;
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            s = s.Trim();
+
+            // Bare @handle
+            if (s.StartsWith("@") && !s.Contains("/"))
+            {
+                param = "forHandle"; value = s.Substring(1); return true;
+            }
+            // Bare UC... channel ID (no spaces, no slashes)
+            if (!s.Contains("/") && !s.Contains(" ") && s.StartsWith("UC") && s.Length > 10)
+            {
+                param = "id"; value = s; return true;
+            }
+            if (!s.Contains("://")) return false;
+
+            try
+            {
+                var uri   = new Uri(s);
+                var parts = uri.AbsolutePath.TrimStart('/').Split('/');
+
+                // youtube.com/@handle
+                if (parts.Length > 0 && parts[0].StartsWith("@"))
+                {
+                    param = "forHandle"; value = parts[0].Substring(1); return true;
+                }
+                // youtube.com/channel/UCxxx
+                if (parts.Length >= 2 && parts[0] == "channel")
+                {
+                    param = "id"; value = parts[1]; return true;
+                }
+                // youtube.com/user/username
+                if (parts.Length >= 2 && parts[0] == "user")
+                {
+                    param = "forUsername"; value = parts[1]; return true;
+                }
+                // youtube.com/c/channelName (legacy)
+                if (parts.Length >= 2 && parts[0] == "c")
+                {
+                    param = "forHandle"; value = parts[1]; return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         private static string ExtractVideoId(string url)
@@ -690,6 +775,15 @@ namespace LensError.Editor
             }
             catch { }
             return null;
+        }
+
+        private static DateTime ParseDate(string s)
+        {
+            DateTime dt;
+            if (!string.IsNullOrEmpty(s) &&
+                DateTime.TryParse(s, null, DateTimeStyles.RoundtripKind, out dt))
+                return dt;
+            return DateTime.MinValue;
         }
 
         private void SetStatus(string msg, bool error)
@@ -712,17 +806,19 @@ namespace LensError.Editor
         // ── Plain data types ──────────────────────────────────────────────────────
 
         private enum VideoAvailability { Available, AgeRestricted, Private, Deleted, Unavailable }
+        private enum SortOrder         { PlaylistOrder, NewestFirst, OldestFirst }
 
         private class VideoEntry
         {
             public string videoId, title, thumbnailUrl;
+            public DateTime publishedAt;
             public VideoAvailability availability;
             public bool selectable, include;
         }
 
-        private class PlaylistMeta  { public string title, thumbnailUrl; }
-        private class RawItem       { public string videoId, title, thumbnailUrl; }
-        private class VideoDetail   { public string privacyStatus, ytRating; }
+        private class PlaylistMeta { public string title, thumbnailUrl; }
+        private class RawItem      { public string videoId, title, thumbnailUrl; public DateTime publishedAt; }
+        private class VideoDetail  { public string privacyStatus, ytRating; }
 
         // ── JSON models (JsonUtility) ─────────────────────────────────────────────
 
@@ -733,13 +829,18 @@ namespace LensError.Editor
         [Serializable] private class YtPlaylistItemListResp { public string nextPageToken; public YtPIItem[] items; }
         [Serializable] private class YtPIItem               { public YtPISnippet snippet; public YtPICD contentDetails; }
         [Serializable] private class YtPISnippet            { public string title; public YtThumbnailSet thumbnails; }
-        [Serializable] private class YtPICD                 { public string videoId; }
+        [Serializable] private class YtPICD                 { public string videoId; public string videoPublishedAt; }
 
         [Serializable] private class YtVideoListResp        { public YtVItem[]   items; }
         [Serializable] private class YtVItem                { public string id; public YtVStatus status; public YtVCD contentDetails; }
         [Serializable] private class YtVStatus              { public string privacyStatus; }
         [Serializable] private class YtVCD                  { public YtContentRating contentRating; }
         [Serializable] private class YtContentRating        { public string ytRating; }
+
+        [Serializable] private class YtChannelListResp      { public YtChItem[]  items; }
+        [Serializable] private class YtChItem               { public YtChCD      contentDetails; }
+        [Serializable] private class YtChCD                 { public YtChRelated relatedPlaylists; }
+        [Serializable] private class YtChRelated            { public string uploads; }
 
         [Serializable]
         private class YtThumbnailSet

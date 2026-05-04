@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 using ABI.CCK.Components;
@@ -149,7 +150,7 @@ namespace LensError.Editor
         // Returns true if the Remove button was clicked for entry i
         private bool DrawEntry(YouTubePlaylistSync sync, CVRVideoPlayer player, string apiKey, int i)
         {
-            var  entry         = sync.playlists[i];
+            var  entry          = sync.playlists[i];
             bool isFetchingThis = _isFetching && _fetchingIndex == i;
             bool removeClicked  = false;
 
@@ -185,6 +186,19 @@ namespace LensError.Editor
                 entry.shuffle = newShuffle;
                 EditorUtility.SetDirty(sync);
             }
+
+            // Sort order (grayed when shuffle is on)
+            EditorGUI.BeginDisabledGroup(entry.shuffle);
+            EditorGUI.BeginChangeCheck();
+            var newSort = (YouTubePlaylistSync.PlaylistSortOrder)EditorGUILayout.EnumPopup(
+                "Sort Order", entry.sortOrder);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(sync, "Change Sort Order");
+                entry.sortOrder = newSort;
+                EditorUtility.SetDirty(sync);
+            }
+            EditorGUI.EndDisabledGroup();
 
             // Age-restricted
             EditorGUI.BeginChangeCheck();
@@ -239,16 +253,20 @@ namespace LensError.Editor
 
             try
             {
-                string id = ExtractPlaylistId(entry.playlistUrl);
-                if (string.IsNullOrEmpty(id))
-                    throw new Exception("Could not parse a playlist ID from the URL.");
+                string id = await ResolveToPlaylistIdAsync(entry.playlistUrl, apiKey);
 
                 var meta    = await GetPlaylistMetaAsync(id, apiKey);
                 var raw     = await GetAllItemsAsync(id, apiKey);
                 var details = await GetVideoDetailsAsync(raw.ConvertAll(r => r.videoId), apiKey);
 
                 var items = BuildImportList(raw, details, entry.includeAgeRestricted);
-                if (entry.shuffle) Shuffle(items);
+
+                if (entry.shuffle)
+                    Shuffle(items);
+                else if (entry.sortOrder == YouTubePlaylistSync.PlaylistSortOrder.NewestFirst)
+                    items.Sort((a, b) => DateTime.Compare(b.publishedAt, a.publishedAt));
+                else if (entry.sortOrder == YouTubePlaylistSync.PlaylistSortOrder.OldestFirst)
+                    items.Sort((a, b) => DateTime.Compare(a.publishedAt, b.publishedAt));
 
                 Undo.RecordObject(player, "YouTube Playlist Sync");
                 string resultMsg = ApplyToPlayer(player, meta, items, entry.shuffle);
@@ -291,15 +309,20 @@ namespace LensError.Editor
 
                 try
                 {
-                    string id = ExtractPlaylistId(entry.playlistUrl);
-                    if (string.IsNullOrEmpty(id)) continue;
+                    string id = await ResolveToPlaylistIdAsync(entry.playlistUrl, apiKey);
 
                     var meta    = await GetPlaylistMetaAsync(id, apiKey);
                     var raw     = await GetAllItemsAsync(id, apiKey);
                     var details = await GetVideoDetailsAsync(raw.ConvertAll(r => r.videoId), apiKey);
 
                     var items = BuildImportList(raw, details, entry.includeAgeRestricted);
-                    if (entry.shuffle) Shuffle(items);
+
+                    if (entry.shuffle)
+                        Shuffle(items);
+                    else if (entry.sortOrder == YouTubePlaylistSync.PlaylistSortOrder.NewestFirst)
+                        items.Sort((a, b) => DateTime.Compare(b.publishedAt, a.publishedAt));
+                    else if (entry.sortOrder == YouTubePlaylistSync.PlaylistSortOrder.OldestFirst)
+                        items.Sort((a, b) => DateTime.Compare(a.publishedAt, b.publishedAt));
 
                     Undo.RecordObject(player, "YouTube Playlist Sync");
                     ApplyToPlayer(player, meta, items, entry.shuffle);
@@ -329,7 +352,7 @@ namespace LensError.Editor
             Repaint();
         }
 
-        // Returns a short human-readable result message (what was added/updated)
+        // Returns a short human-readable result message
         private string ApplyToPlayer(
             CVRVideoPlayer player, PlaylistMeta meta,
             List<ImportEntry> list, bool shuffle)
@@ -393,8 +416,8 @@ namespace LensError.Editor
             }
             else
             {
-                bool multi    = list.Count > ChunkSize;
-                int chunkNum  = 0;
+                bool multi   = list.Count > ChunkSize;
+                int chunkNum = 0;
                 for (int i = 0; i < list.Count; i += ChunkSize)
                 {
                     chunkNum++;
@@ -421,6 +444,34 @@ namespace LensError.Editor
         }
 
         // ── API calls ─────────────────────────────────────────────────────────────
+
+        // Resolves a playlist URL/ID or channel URL to a playlist ID, throwing on failure.
+        private async Task<string> ResolveToPlaylistIdAsync(string input, string key)
+        {
+            string id = ExtractPlaylistId(input);
+            if (!string.IsNullOrEmpty(id)) return id;
+
+            string chParam, chValue;
+            if (TryExtractChannelQuery(input, out chParam, out chValue))
+                return await GetChannelUploadsPlaylistIdAsync(chParam, chValue, key);
+
+            throw new Exception("Could not parse a playlist ID or channel URL from the input.");
+        }
+
+        private async Task<string> GetChannelUploadsPlaylistIdAsync(
+            string param, string value, string key)
+        {
+            string url = YtApi + "channels?part=contentDetails&" + param + "="
+                + Uri.EscapeDataString(value) + "&key=" + key;
+            string json = await GetAsync(url);
+            var r = JsonUtility.FromJson<YtChannelListResp>(json);
+            if (r == null || r.items == null || r.items.Length == 0)
+                throw new Exception("Channel not found.");
+            string uploads = r.items[0].contentDetails.relatedPlaylists.uploads;
+            if (string.IsNullOrEmpty(uploads))
+                throw new Exception("Could not find uploads playlist for this channel.");
+            return uploads;
+        }
 
         private async Task<PlaylistMeta> GetPlaylistMetaAsync(string id, string key)
         {
@@ -452,7 +503,8 @@ namespace LensError.Editor
                         {
                             videoId      = item.contentDetails.videoId,
                             title        = item.snippet.title,
-                            thumbnailUrl = BestThumb(item.snippet.thumbnails)
+                            thumbnailUrl = BestThumb(item.snippet.thumbnails),
+                            publishedAt  = ParseDate(item.contentDetails.videoPublishedAt)
                         });
                 pageToken = r != null ? r.nextPageToken : null;
             }
@@ -528,7 +580,8 @@ namespace LensError.Editor
                 {
                     videoId      = r.videoId,
                     title        = string.IsNullOrEmpty(r.title) ? r.videoId : r.title,
-                    thumbnailUrl = r.thumbnailUrl
+                    thumbnailUrl = r.thumbnailUrl,
+                    publishedAt  = r.publishedAt
                 });
             }
             return list;
@@ -537,10 +590,10 @@ namespace LensError.Editor
         private static CVRVideoPlayerPlaylistEntity MakeEntity(ImportEntry v) =>
             new CVRVideoPlayerPlaylistEntity
             {
-                videoTitle           = v.title,
-                videoUrl             = "https://www.youtube.com/watch?v=" + v.videoId,
-                thumbnailUrl         = v.thumbnailUrl,
-                introEndInSeconds    = 0,
+                videoTitle            = v.title,
+                videoUrl              = "https://www.youtube.com/watch?v=" + v.videoId,
+                thumbnailUrl          = v.thumbnailUrl,
+                introEndInSeconds     = 0,
                 creditsStartInSeconds = 0
             };
 
@@ -569,12 +622,20 @@ namespace LensError.Editor
             return max;
         }
 
+        // Accepts playlist URLs/IDs. Returns null for channel URLs.
         private static string ExtractPlaylistId(string s)
         {
             if (s == null) return null;
             s = s.Trim();
             if (string.IsNullOrEmpty(s)) return null;
-            if (!s.Contains("://")) return s;
+
+            if (!s.Contains("://"))
+            {
+                if (s.StartsWith("@")) return null;
+                if (s.StartsWith("UC") && !s.Contains(" ") && s.Length > 10) return null;
+                return s;
+            }
+
             try
             {
                 string query = new Uri(s).Query.TrimStart('?');
@@ -587,6 +648,48 @@ namespace LensError.Editor
             }
             catch { }
             return null;
+        }
+
+        private static bool TryExtractChannelQuery(string s, out string param, out string value)
+        {
+            param = value = null;
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            s = s.Trim();
+
+            if (s.StartsWith("@") && !s.Contains("/"))
+            {
+                param = "forHandle"; value = s.Substring(1); return true;
+            }
+            if (!s.Contains("/") && !s.Contains(" ") && s.StartsWith("UC") && s.Length > 10)
+            {
+                param = "id"; value = s; return true;
+            }
+            if (!s.Contains("://")) return false;
+
+            try
+            {
+                var uri   = new Uri(s);
+                var parts = uri.AbsolutePath.TrimStart('/').Split('/');
+
+                if (parts.Length > 0 && parts[0].StartsWith("@"))
+                {
+                    param = "forHandle"; value = parts[0].Substring(1); return true;
+                }
+                if (parts.Length >= 2 && parts[0] == "channel")
+                {
+                    param = "id"; value = parts[1]; return true;
+                }
+                if (parts.Length >= 2 && parts[0] == "user")
+                {
+                    param = "forUsername"; value = parts[1]; return true;
+                }
+                if (parts.Length >= 2 && parts[0] == "c")
+                {
+                    param = "forHandle"; value = parts[1]; return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         private static string ExtractVideoId(string url)
@@ -617,6 +720,15 @@ namespace LensError.Editor
             return "";
         }
 
+        private static DateTime ParseDate(string s)
+        {
+            DateTime dt;
+            if (!string.IsNullOrEmpty(s) &&
+                DateTime.TryParse(s, null, DateTimeStyles.RoundtripKind, out dt))
+                return dt;
+            return DateTime.MinValue;
+        }
+
         private static void Shuffle<T>(List<T> list)
         {
             var rng = new System.Random();
@@ -630,9 +742,9 @@ namespace LensError.Editor
         // ── Plain data types ──────────────────────────────────────────────────────
 
         private class PlaylistMeta  { public string title, thumbnailUrl; }
-        private class RawItem       { public string videoId, title, thumbnailUrl; }
+        private class RawItem       { public string videoId, title, thumbnailUrl; public DateTime publishedAt; }
         private class VideoDetail   { public string privacyStatus, ytRating; }
-        private class ImportEntry   { public string videoId, title, thumbnailUrl; }
+        private class ImportEntry   { public string videoId, title, thumbnailUrl; public DateTime publishedAt; }
 
         // ── JSON models ───────────────────────────────────────────────────────────
 
@@ -643,13 +755,18 @@ namespace LensError.Editor
         [Serializable] private class YtPlaylistItemListResp { public string nextPageToken; public YtPIItem[] items; }
         [Serializable] private class YtPIItem               { public YtPISnippet snippet; public YtPICD contentDetails; }
         [Serializable] private class YtPISnippet            { public string title; public YtThumbnailSet thumbnails; }
-        [Serializable] private class YtPICD                 { public string videoId; }
+        [Serializable] private class YtPICD                 { public string videoId; public string videoPublishedAt; }
 
         [Serializable] private class YtVideoListResp        { public YtVItem[]   items; }
         [Serializable] private class YtVItem                { public string id; public YtVStatus status; public YtVCD contentDetails; }
         [Serializable] private class YtVStatus              { public string privacyStatus; }
         [Serializable] private class YtVCD                  { public YtContentRating contentRating; }
         [Serializable] private class YtContentRating        { public string ytRating; }
+
+        [Serializable] private class YtChannelListResp      { public YtChItem[]  items; }
+        [Serializable] private class YtChItem               { public YtChCD      contentDetails; }
+        [Serializable] private class YtChCD                 { public YtChRelated relatedPlaylists; }
+        [Serializable] private class YtChRelated            { public string uploads; }
 
         [Serializable]
         private class YtThumbnailSet

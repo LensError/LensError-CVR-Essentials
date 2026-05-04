@@ -20,15 +20,22 @@ One-shot import with a preview before committing anything.
 
 Usage:
   1. Paste your API key and click Save Key (only needed once).
-  2. Paste a playlist URL or bare playlist ID into "Playlist URL or ID".
+  2. Paste a playlist URL, channel URL, or bare ID into "Playlist / Channel URL or ID".
      Accepted formats:
        https://www.youtube.com/playlist?list=PLxxx
        https://www.youtube.com/watch?v=xxx&list=PLxxx
-       PLxxx  (bare ID)
+       PLxxx  (bare playlist ID)
+       https://www.youtube.com/@handle    (channel, imports all uploads)
+       https://www.youtube.com/channel/UCxxx
+       https://www.youtube.com/user/username
+       @handle  (bare handle)
+       UCxxx    (bare channel ID)
   3. Drag a CVRVideoPlayer from the scene into "Target Video Player",
      or pick one from the "Scene Players" dropdown and hit Scan.
   4. Set options:
        Shuffle on Import    randomise order before writing to the player
+       Sort Order           Playlist Order / Newest First / Oldest First
+                            (grayed out when Shuffle is on)
        Append to Existing   keep other playlists already on the player
                             (if off, all existing playlists are cleared first)
   5. Click "Fetch Playlist". Videos appear in a scrollable preview list.
@@ -62,10 +69,12 @@ Setup:
      (same key as the Importer, set it in either place, both share it).
   3. If the CVRVideoPlayer is on a different GameObject, assign it to
      "Target Override". Otherwise it is found automatically on the same object.
-  4. Click "+ Add Playlist" for each YouTube playlist you want to manage.
+  4. Click "+ Add Playlist" for each YouTube playlist or channel you want to manage.
      Per entry:
-       URL or ID              same formats as the Importer
+       URL or ID              same formats as the Importer (playlists and channels)
        Shuffle on Sync        randomise order when syncing
+       Sort Order             Playlist Order / Newest First / Oldest First
+                              (grayed out when Shuffle is on)
        Include Age-Restricted include age-restricted videos (off by default)
   5. Click "Sync Now" on an individual entry, or "Sync All Playlists" to
      update everything at once.
@@ -78,6 +87,13 @@ Sync behaviour:
 
   Sync does NOT happen automatically on world upload. Press Sync before
   uploading when you want the latest videos.
+
+Sort order:
+  Playlist Order   keeps the original YouTube playlist order (default)
+  Newest First     sorts by video publish date, newest at the top
+  Oldest First     sorts by video publish date, oldest at the top
+  If Shuffle is enabled the sort order setting is ignored.
+  In the merge case, sort order only affects the sequence of newly added videos.
 
 Video filtering (both tools):
   Deleted          always excluded
